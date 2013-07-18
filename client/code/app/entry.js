@@ -1,0 +1,33 @@
+// This file automatically gets called first by SocketStream and must always exist
+
+//
+// sms's queue
+var smsQueue = [];
+
+// Make 'ss' available to all modules and the browser console
+window.ss = require('socketstream');
+
+ss.server.on('disconnect', function(){
+  //console.log('Connection down :-(');
+  $("#lbl_srv_cnt").html(" Disconnected from server ");
+  $("#lbl_srv_cnt").removeClass('label-success').addClass('label-important');
+});
+
+ss.server.on('reconnect', function(){
+  //console.log('Connection back up :-)');
+  $("#lbl_srv_cnt").html(" Connected to server ");
+  $("#lbl_srv_cnt").removeClass('label-important').addClass('label-success');
+});
+//
+//
+ss.server.on('ready', function(){
+
+  // Wait for the DOM to finish loading
+  jQuery(function(){
+    
+    // Load app
+    require('/app');
+
+  });
+
+});
