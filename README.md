@@ -7,6 +7,15 @@ SMS sender running on NodeJS and Socketstream with PostgreSQL and Kannel backend
 [Dasboard demo](http://nkd.neatsky.net/)
 
 
+
+## Features
+
+* working with [kannel](http://www.kannel.org);
+* [PostgeSQL](http://www.postgresql.org) database backend, application listens to notification from DB;
+* fast aplication running on [Nodejs](http://www.nodejs.org) and [Socketstream](http://www.socketstream.org) framework
+* dashboard with sms queue view;
+
+
 ## Installation
 
 
@@ -16,10 +25,24 @@ SMS sender running on NodeJS and Socketstream with PostgreSQL and Kannel backend
 ### Prepare PostgreSQL database
 
 
-### Download, confiure  and run node-kannel-sender
+### Download, configure  and run node-kannel-sender
+
+    git clone git://github.com/pwldp/node-sms-sender.git
+    cd node-sms-sender
+    npm install
 
 
-## Features
+Run with:
+
+    nodejs app.js
+    
+    
+    or 
+    
+    
+    ./run_dev.sh
+
+
 
 
 
