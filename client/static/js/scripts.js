@@ -305,6 +305,7 @@ $(document).ready(function() {
 	ledBlink();
     });    
     ss.event.on('smsstatus', function(sms){
+	console.log("smsstatus: "+JSON.stringify(sms));
 	ledBlink();
 	$("#sms_status_"+sms.id).html(sms.status);
 	if (sms.status==='sent'){
@@ -318,8 +319,9 @@ $(document).ready(function() {
 	    $("#sms_"+sms.id).addClass('info');
 	    counterSending++;
 	} else if (sms.status==='error'){
-	    $("#sms_status_"+sms.id).addClass('label-important');
-	    $("#sms_"+sms.id).removeClass('warning').addClass('error');
+	    console.log("Jest status=error.");
+	    $("#sms_status_"+sms.id).removeClass('label-info').addClass('label-important');
+	    $("#sms_"+sms.id).removeClass('info').addClass('warning');
 	    counterSending--;
 	};
 	if (counterSending<0){

@@ -9,7 +9,33 @@ var conf = require('../../conf')
     , util = require('util')
     ;
 //
+String.prototype.normalizePhone = function(){
+    var retPhone = this.replace(/[^\d]/g, '');
+    if (retPhone[0]==="+") retPhone=retphone.slice(1);
+    if (retPhone[0]==="4" && retPhone[1]==="8") retPhone=retPhone.slice(2);
+    if (retPhone.length!=9) retPhone=-1;
+    return retPhone;
+};
+            
+String.prototype.isMobilePhoneInPL = function(){
+    var plMobilePrefixes = ['6666','690','691','692','693','694','695','696','50','51','53','57','60','66','69', '72', '73', '78','79','88'];
+    var retVal = false;
+    var phone = this.normalizePhone();
+    //var phone = this;
+    if (phone!=-1){
+	for (var i=0, len=plMobilePrefixes.length; i<len; i++){
+            if (String(phone.substr(0,plMobilePrefixes[i].length))===String(plMobilePrefixes[i])){
+                retVal = true;
+        	break;
+    	    };
+	};
+    };
+    return retVal;
+};
+//
 module.exports = function sendSMS(phone, text, cb){
+    //
+    if (!phone.isMobilePhoneInPL()) return cb("Numer telefonu musi być numerem sieci komórkowej w Polsce.", false);
     //
     var args = {
 	"username": conf.kannel.user,
@@ -25,7 +51,6 @@ module.exports = function sendSMS(phone, text, cb){
 	path: "/cgi-bin/sendsms?"+ querystring.stringify(args)
     };
     //
-    //console.log("options="+util.inspect(options));
     http.get(options, function(res) {
 	//console.log("Got response: " + util.inspect(res));
 	var status = parseInt(res.statusCode, 10);
