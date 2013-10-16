@@ -11,12 +11,12 @@ var conf = {
 	['user', 'password']
     ],
     "kannel": {
-	"host": "10.89.1.80",
+	"host": "10.10.10.10",
 	"port": 13013,
-	"user": "smssend",
-	"password": "qwe123"
+	"user": "smsuser",
+	"password": "P@ssw0rd"
     },
-    pgURI: "tcp://smssender:ha5elk0@10.89.1.154/smsy",
+    pgURI: "tcp://pguser:P@ssw0rd0@10.10.10.10/smsy",
     sendDtToClient: false,
 };
 //
