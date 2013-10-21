@@ -51,6 +51,8 @@ module.exports = function sendSMS(phone, text, cb){
 	path: "/cgi-bin/sendsms?"+ querystring.stringify(args)
     };
     //
+    console.log("SEND options: "+JSON.stringify(options));
+    //
     http.get(options, function(res) {
 	//console.log("Got response: " + util.inspect(res));
 	var status = parseInt(res.statusCode, 10);

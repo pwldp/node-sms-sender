@@ -5,19 +5,20 @@
 // 2013.06.26
 //
 var conf = {
-    "mode": "demo",	// ["demo", "prod"]
+    "mode": "prod",	// ["demo", "prod"]
+    "enable_send_sms": false,
     "users" : [	// pairs list: username, password
 	['demo', 'demo'],
 	['user', 'password']
     ],
     "kannel": {
-	"host": "10.10.10.10",
+	"host": "10.10..10.10",
 	"port": 13013,
-	"user": "smsuser",
+	"user": "sender",
 	"password": "P@ssw0rd"
     },
-    pgURI: "tcp://pguser:P@ssw0rd0@10.10.10.10/smsy",
-    sendDtToClient: false,
+    pgURI: "tcp://sender:P@ssw0rd@10.10.10.10/sms",
+    sendDtToClient: true,
 };
 //
 if (conf.mode==="demo"){

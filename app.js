@@ -13,7 +13,7 @@ var ss = require('socketstream')
     , moment = require('moment')
     , util = require('util')
     , sendDemoSms = require('./server/libs//sendDemoSms')
-    , dbhPgsql = require('./server/libs/dbh_pgsql')
+//    , dbhPgsql = require('./server/libs/dbh_pgsql')
     , querystring = require('querystring')
     , url = require('url')
     , handleSmsQuery = require('./server/libs/smsQueryHandler')
@@ -21,9 +21,9 @@ var ss = require('socketstream')
 
 // Define a single-page client called 'main'
 ss.client.define('main', {
-  view: 'app.html',
+  view: 'smsboard.html',
   css:  [],
-  code: ['libs/jquery.min.js', 'app'],
+  code: ['libs', 'app'],
   tmpl: '*'
 });
 // Serve this client on the root URL
@@ -56,14 +56,16 @@ if (ss.env === 'production') ss.client.packAssets();
 // send date and time to client
 if (conf.sendDtToClient){
     setInterval(function() {
-	var now = moment().format("YYYY-MM-DD HH:mm:ss");;
+	var now = moment().format("YYYY-MM-DD HH:mm");
 	ss.api.publish.all('dt', now);
-    }, 1000 );
+    }, 10000 );
 };
 //
 // Start web server
 var server = http.Server(ss.http.middleware);
-server.listen(3000);
+var listPort =  process.env.PORT || 3001;
+console.log("Server listen on port: "+listPort);
+server.listen( listPort );
 // Start SocketStream
 ss.start(server);
 //
@@ -100,6 +102,7 @@ if (conf.mode==="demo"){
 } else if (conf.mode==="prod"){
     console.log("MODE: PRODUCTION");
     //
+//    readSmsFromQueue();
     
 };
 //

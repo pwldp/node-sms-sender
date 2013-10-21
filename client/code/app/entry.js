@@ -8,15 +8,15 @@ var smsQueue = [];
 window.ss = require('socketstream');
 
 ss.server.on('disconnect', function(){
-  //console.log('Connection down :-(');
-  $("#lbl_srv_cnt").html(" Disconnected from server ");
-  $("#lbl_srv_cnt").removeClass('label-success').addClass('label-important');
+    console.log('Connection down :-(');
+    var n = noty({text: 'Server connection is down.', layout: 'topRight', type:'error', timeout:4098, closeWith: ['button'],force:true});
+    ss.server.emit('logEvent', {'t':'error','msg':'Disconnected from app server.','from':'appconn'});
 });
 
 ss.server.on('reconnect', function(){
-  //console.log('Connection back up :-)');
-  $("#lbl_srv_cnt").html(" Connected to server ");
-  $("#lbl_srv_cnt").removeClass('label-important').addClass('label-success');
+    console.log('Connection back up :-)');
+    var n = noty({text: 'Server connection back up.', layout: 'topRight', type:'success', timeout:10000, closeWith: ['button'],force: true});
+    ss.server.emit('logEvent', {'t':'info','msg':'Reconnected to app server.','from':'appconn'});
 });
 //
 //

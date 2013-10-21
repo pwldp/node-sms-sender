@@ -57,6 +57,7 @@ function updateSmsQueue(sms){
     row+= "</tr>";
     $(row).prependTo("#smsqueue > tbody");
 };
+
 //
 function updateGlobalCounters(sms){
     //console.log("Update global counters:"+sms.dt);
@@ -268,7 +269,7 @@ var ledOn = "/images/bullet_red.png";
 var ledOff = "/images/bullet_grey.png";
 var ledSms = "/images/bullet_blue.png";
 var ledOnStart=new Date().getTime();
-
+/*
 function ledBlink(){
     if (currentLedStatus==="off"){
 	currentLedStatus = "on";
@@ -290,23 +291,65 @@ setInterval(function() {
 	$("#idEnvelope").removeClass('icon-envelope').addClass('icon-envelope-alt');
 	currentLedStatus = "off";
     }
-}, 100 );    
+}, 100 );
+*/
+//
+function changeStatus(id, txtEnabled, txtDisabled, status){
+
+    function setEnabled(elId, txt){
+      var chld = $(elId).children();
+      $(elId).removeClass('label-danger').addClass('label-success');
+      chld.removeClass('glyphicon-ban-circle').addClass('glyphicon-ok');
+      chld.html('&nbsp;<b>'+txt+'</b>');
+    };
+
+    function setDisabled(elId, txt){
+       var chld = $(elId).children();
+       $(id).removeClass('label-success').addClass('label-danger');
+       chld.removeClass('glyphicon-ok').addClass('glyphicon-ban-circle');
+       chld.html('&nbsp;<b>'+txt+'</b>');
+    };
+
+    var tt = $(id).attr('class');
+    var chld = $(id).children();
+//    console.log("children class="+chld.attr("class"));
+//    console.log(id+" class= "+tt);
+    if (status){
+        console.log("status:"+status);
+        if (status==='enabled'){
+          setEnabled(id, txtEnabled);
+        } else if (status==='disabled'){
+            setDisabled(id, txtDisabled);
+        };;
+    } else {
+        if (tt.indexOf("label-success")!==-1){
+            console.log(id+" success");
+            setDisabled(id, txtEnabled);
+        } else if (tt.indexOf("label-danger")!==-1){
+            console.log(id+" danger");
+            setEnabled(id, txtDisabled);
+        };
+    };
+};
 //
 $(document).ready(function() {
     //
+    
     ss.event.on('dt', function(msg){
 	$("#server_dt").html("Server date/time: "+msg);
+	changeStatus('#statusServer','Connected to server','Disconnected from server', 'enabled');
     });
     //
     ss.event.on('newsms', function(sms){
 	//$("#alertBox").css("visibility","hidden");
-	//$("#alertBox").hide();;
+	//$("#alertBox").hide();
 	updateSmsQueue(sms);
-	ledBlink();
-    });    
+	//ledBlink();
+    });
+    //
     ss.event.on('smsstatus', function(sms){
 	console.log("smsstatus: "+JSON.stringify(sms));
-	ledBlink();
+	//ledBlink();
 	$("#sms_status_"+sms.id).html(sms.status);
 	if (sms.status==='sent'){
 	    $("#sms_status_"+sms.id).removeClass('label-info').addClass('label-success');
@@ -323,11 +366,41 @@ $(document).ready(function() {
 	    $("#sms_status_"+sms.id).removeClass('label-info').addClass('label-important');
 	    $("#sms_"+sms.id).removeClass('info').addClass('warning');
 	    counterSending--;
+	    var html = "<h4>Error.</h4>Message didn't send.<br>"+sms.msg;
+	    var n = noty({
+		text: '<h4>Error</h4>'+sms.msg,
+		layout: 'topRight',
+		type: 'error',
+		timeout: 12000,
+		closeWith: ['button']
+	    });
+	} else if (sms.status==='warning') {
+	    var n = noty({
+		text: '<h4>Warning</h4>'+sms.msg,
+		layout: 'topRight',
+		type: 'warning',
+		timeout: 12000,
+		closeWith: ['button']
+	    });
 	};
 	if (counterSending<0){
 	    counterSending=0;
 	}
 	$("#counterSending").html(counterSending);
+    });
+    //
+    ss.event.on('dbconn', function(data){
+	//console.log("Received data: "+JSON.stringify(data));
+	var stat = 'disabled';
+	if (data==='OK') stat='enabled';
+	changeStatus('#statusPgsql','Connected to PgSQL','Disconnected from PgSQL', stat);
+	changeStatus('#statusServer','Connected to server','Disconnected from server', 'enabled');
+	if (statusDbConn!==stat){
+	    statusDbConn = stat;
+	    var t='info';
+	    if (stat==='disabled') t='error';
+	    ss.server.emit('logEvent', {'t':t,'msg':'DB connection status changed to: '+stat+'.'});
+	};
     });
     //
     ss.rpc('smsfuncs.getSendingStats', function(data){
@@ -362,58 +435,131 @@ updateMonthsChart();
 //==================
 //
 $("#smsFormReset").click(function(e){
-  console.log("smsFormReset...");  
+    console.log("smsFormReset...");
+    $("#fgRecipientPhone").removeClass("has-error");
+    $("#fgText").removeClass("has-error");
   //e.preventDefault();
-  $('#smsForm')[0].reset();
+    $('#smsForm')[0].reset();
 });
 //
 $("#smsFormSend").click(function(e){
     console.log("smsFormSend...");
     e.preventDefault();
-    var sms = {
-	"sname": $("#inputSenderName").val(),
-	"rname": $("#inputRecipientName").val(),
-	"phone": $("#inputRecipientPhone").val(),
-	"text": $("#inputText").val()
+    // validate data from form
+    
+    $("#fgRecipientPhone").removeClass("has-error");
+    $("#fgText").removeClass("has-error");
+    var formValidated =  true;
+    var errMsg = '';
+    if ($("#inputRecipientPhone").val().length<9){
+	$("#fgRecipientPhone").addClass("has-error");
+	formValidated = false;
     };
-    console.log("smsFormSend: "+JSON.stringify(sms));
-    ss.rpc("smsfuncs.sendSMS", sms, function(data){
-	console.log("sent:"+data);
-	$("#alertBox").css('visibility', 'visible');
-	$("#alertBox").removeClass('alert-error').addClass('alert-info');
-	var html = "<h4>Information.</h4>Message was sent to: "+sms.phone;
-	$("#alertBoxContents").html(html);
-	//$("#alertBox").css('visibility', 'hidden');
-	setTimeout(function() { 
-	    $("#alertBox").css('visibility', 'hidden');
-//        $("#alertBox").fadeOut();
-	}, 2500);
-    });
+    if ($("#inputText").val().length<1){
+	formValidated = false;
+	$("#fgText").addClass("has-error");
+    };    
+    //
+    if (formValidated){
+	var sms = {
+	    "sname": $("#inputSenderName").val(),
+	    "rname": $("#inputRecipientName").val(),
+	    "phone": $("#inputRecipientPhone").val(),
+	    "text": $("#inputText").val()
+	};
+	console.log("smsFormSend: "+JSON.stringify(sms));
+	ss.rpc("smsfuncs.sendSMS", sms, function(data){
+	    console.log("sent:"+JSON.stringify(data));
+	    var html = "<h4>Information</h4>Message was sent to: "+sms.phone;
+	    var n = noty({
+		text: html,
+		layout: 'topRight',
+		type: 'success',
+		timeout: 8000,
+		closeWith: ['button']
+
+	    });
+	});
+    } else {
+	var n = noty({
+	    text: '<h4>Error</h4>Fill in required fields.',
+	    layout: 'topRight',
+	    type: 'error',
+	    timeout: 12000,
+	    closeWith: ['button']
+	    
+	});
+    };
     return false;
 });
 //
-// Download a file form a url.
-function saveFile(url) {
-  // Get file name from url.
-  var filename = url.substring(url.lastIndexOf("/") + 1).split("?")[0];
-  var xhr = new XMLHttpRequest();
-  xhr.responseType = 'blob';
-  xhr.onload = function() {
-    var a = document.createElement('a');
-    a.href = window.URL.createObjectURL(xhr.response); // xhr.response is a blob
-    a.download = filename; // Set the file name.
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    delete a;
-  };
-  xhr.open('GET', url);
-  //xhr.setRequestHeader('Access-Control-Allow-Origin', 'http://bi.gazeta.pl');
-  //document.domain = 'http://bi.gazeta.pl';
-  //xhr.setRequestHeader('Origin', 'http://bi.gazeta.pl');
-  xhr.send();
-}
-//saveFile("http://bi.gazeta.pl/im/e4/df/d8/z14213092AA.jpg");
+changeStatus('#statusServer','Connected to server','Disconnected from server', 'disabled');
+changeStatus('#statusPgsql','Connected to PgSQL','Disconnected from PgSQL', 'disabled');
+changeStatus('#statusKannel','Kannel is operated','Kannel is out of order', 'disabled');
+changeStatus('#statusSending','SMS sending is enabled','SMS sending is disabled', 'disabled');
 //
+//
+var uiLog=[],
+    statusDbConn,
+    statusSrvConn;
+//
+ss.server.on('logEvent', function (e) {
+    console.log("logEvent: "+JSON.stringify(e));
+    //
+    var elem = {
+	dt: moment().format("YYYY-MM-DD HH:mm:ss"),
+	type: e.t,
+	descr: e.msg
+    };
+    //
+    if (e.from==='appconn'){
+	if (statusSrvConn!==e.t){
+	    statusSrvConn = e.t;
+	    uiLog.unshift(elem);
+	};
+	if (e.t==='error'){
+	    changeStatus('#statusServer','Connected to server','Disconnected from server', 'disabled');
+	} else {
+	    changeStatus('#statusServer','Connected to server','Disconnected from server', 'enabled');
+	};
+    } else {
+	uiLog.unshift(elem);
+    };
+    uiLog.splice(20);
+    // update log table elements
+    $("#logtable tbody tr").remove();
+    for (var i=0, l=uiLog.length; i<l; i++){
+	//console.log(JSON.stringify(uiLog[i]));
+	//
+	// add new row
+	var colRow = 'active';
+	if (uiLog[i].type==='error'){
+	    colRow = 'danger';
+	} else if (uiLog[i].type==='info'){
+	    colRow = 'success';
+	};
+	var row = "<tr class='"+colRow+"'>";
+	row+= "<td>"+uiLog[i].dt+"</td>";
+	row+= "<td>"+uiLog[i].type+"</td>";
+	row+= "<td>"+uiLog[i].descr+"</td>";
+	row+= "</tr>";
+	$(row).appendTo("#logtable > tbody");
+    };
+    console.log(""+uiLog.length);
+});
+
 //
 });
+/*
+var worker = ss.load.worker('/pi.js');
+
+// print output to console
+worker.addEventListener('message', function(e) {
+  console.log(e.data);
+});
+// start worker with 10000000 cycles
+worker.postMessage(1000000000);
+*/
+//
+// EOF
+//

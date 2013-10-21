@@ -1,16 +1,16 @@
 {
     "name": "node-sms-sender"
   , "description": "SMS service with Simple nodejs kannel sender with Postgresql backend and web dasboard"
-  , "version": "0.1.0"
+  , "version": "0.2.0"
   , "author": "Dariusz Pawlak <pawlakdp@gmail.com>"
   , "keywords": ["nodejs", "kannel", "sms", "postgresql"]
   , "dependencies": {
 	"async": "0.2.9",
         "moment": "2.0.0",
-        "pg": "1.3.0",
+        "pg": ">1.3.0",
         "puid": "0.4.3",
 	"querystring": "0.2.0",
-	"socketstream": "0.3.x"
+	"socketstream": ">= 0.3.4"
     }
   , "devDependencies": {
         "mocha": "1.8.1"
@@ -18,9 +18,6 @@
   , "scripts": { "test": "make test" }
   , "main": "./app.js"
   , "engines": { "node": ">=0.8.0" }
-  , "bugs": {
-        "url":"https://github.com/pwldp/node-sms-sender/issues/new"
-    }
   , "repository": {
         "type": "git"
       , "url": "git://github.com/pwldp/node-sms-sender.git"

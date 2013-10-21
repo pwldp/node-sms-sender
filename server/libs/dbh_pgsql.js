@@ -17,8 +17,12 @@ var conf = require("../../conf")
 //
 if (conf.mode==="prod"){
     var client = new pg.Client(conf.pgURI);
-    client.connect(function(data){
-	console.log("Podłączony do PgSQL ??");
+    client.connect(function(err){
+	if (err) {
+	    console.error("PgSQL connection error: "+err)
+	} else {
+	    console.log("Connected to PgSQL.");
+	};
 	// check another kannel sender is connected do PgSQL
 /*
 	var sql = "SELECT * FROM sms_status";
@@ -28,8 +32,12 @@ if (conf.mode==="prod"){
 	});
 */
     });
-    client.on('error', function(data){
-	console.error("PostgreSQL error: "+data);
+    client.on('error', function(err){
+	console.error("PostgreSQL error: "+err);
+    });
+    //
+    client.on('end', function(err){
+	console.error("PostgreSQL on end. "+err);
     });
     //
     client.query('LISTEN "new_sms_in_queue"');
@@ -45,33 +53,67 @@ if (conf.mode==="prod"){
 	    text: jsonSMS.sms_contents
 	};
 	*/
-	sendSMS(jsonSMS.receiver_phone_number, jsonSMS.sms_contents, function(err, ret){
-	    if (err) {
-		console.error("Error: "+err );
-		ss.api.publish.all('smsstatus', {"id":jsonSMS.id, "status":"error", "dt":now});
-	    } else {
-		now = moment().format("YYYY-MM-DD HH:mm:ss");
-		ss.api.publish.all('smsstatus', {"id":jsonSMS.id, "status":"sent", "dt":now});
-	    };
-	    return true;
-	});
+	if (conf.enable_send_sms){
+	    var sql;
+	    sendSMS(jsonSMS.receiver_phone_number, jsonSMS.sms_contents, function(err, ret){
+		if (err) {
+		    console.error("Error: "+err );
+		    switch (err){
+			case 403:
+			    errMsg = "Access denied to kannel server.";
+			    break;
+			default:
+			    errMsg = "";
+		    };
+		    ss.api.publish.all('smsstatus', {"id":jsonSMS.id, "status":"error", "dt":now, "msg":errMsg});
+		    sql = "UPDATE send_queue SET attempts=attempts+1,status='error',error='+errMsg+'";
+		    client.query( sql );
+		} else {
+		    now = moment().format("YYYY-MM-DD HH:mm:ss");
+		    ss.api.publish.all('smsstatus', {"id":jsonSMS.id, "status":"sent", "dt":now});
+		    sql = "UPDATE send_queue SET attempts=attempts+1,status='sent',error=''";
+		    client.query( sql );
+		};
+		return true;
+	    });
+	} else {
+	    ss.api.publish.all('smsstatus',
+			{"id":jsonSMS.id,
+			"status":"warning",
+			"dt":moment().format("YYYY-MM-DD HH:mm:ss"),
+			"msg":"SMS sending is disabled."
+			});
+	};
     });
+    //
+    setInterval(function() {
+	//console.log( moment().format("YYYY-MM-DD HH:mm:ss")+" PgSQL - check connection pending..."+JSON.stringify(client));
+	console.log( moment().format("YYYY-MM-DD HH:mm:ss")+" PgSQL - check connection pending..."+client);
+	client.query("SELECT count(*) FROM sms_send_queue", function(err,res){
+	    console.log('res='+JSON.stringify(res)+', err='+err);
+	    if (err){
+		ss.api.publish.all('dbconn', 'ERR');
+		console.log('PgSQL - ERR');
+		// proba ponownego polaczenia
+		setTimeout(function () {
+		    client.connect(function(err){
+			if (err) {
+			    console.error("PgSQL RESTORE connection error: "+err)
+			} else {
+			    console.log("Restored connection to PgSQL.");
+			};
+		    });
+		}, 10000);
+
+		
+	    } else {
+		ss.api.publish.all('dbconn', 'OK');
+		console.log('PgSQL - OK');
+	    };
+	});
+    }, 10000 );
 };
 //
-//
-/*
-  [ { id: 39926,
-       ts_add_to_queue: Thu Jul 18 2013 13:35:05 GMT+0200 (CEST),
-       ts_sent: Thu Jul 18 2013 13:35:05 GMT+0200 (CEST),
-       status: 'new',
-       sender_id: 0,
-       sender_name: 'Fake Sender Name',
-       receiver_id: 0,
-       receiver_name: 'Fake Sender Name',
-       receiver_phone_number: '48693911792',
-       sms_contents: 'SMS query handler full test response for Fake Sender Name (48693911792), sent at 2013-07-18 13:35:18.',
-       note: '2013-07-18 13:35:18' } ],
-*/
 exports.saveSMS = function(sms) {
     console.log("saveSMS(): "+util.inspect(sms));
     if (sms.sname && sms.rname && sms.phone && sms.text){
